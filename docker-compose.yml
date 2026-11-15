@@ -1,0 +1,164 @@
+x-app: &app
+  build:
+    context: ./kafka-task-2
+    dockerfile: build/Dockerfile
+  networks:
+    - kafka-network
+  restart: on-failure
+  depends_on:
+    create-topic:
+      condition: service_completed_successfully
+    schema-registry:
+      condition: service_started
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.0.1
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - kafka-network
+    ports:
+      - "2181:2181"
+
+  kafka1:
+    image: confluentinc/cp-kafka:7.0.1
+    depends_on:
+      - zookeeper
+    networks:
+      - kafka-network
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka1:29092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    ports:
+      - "9092:9092"
+
+  kafka2:
+    image: confluentinc/cp-kafka:7.0.1
+    depends_on:
+      - zookeeper
+    networks:
+      - kafka-network
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka2:29092,EXTERNAL://localhost:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    ports:
+      - "9093:9093"
+
+  kafka-ui:
+    image: ghcr.io/kafbat/kafka-ui:latest
+    depends_on:
+      - kafka1
+      - kafka2
+    networks:
+      - kafka-network
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka1:29092,kafka2:29092
+      KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:8081
+    ports:
+      - "8080:8080"
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:latest
+    depends_on:
+      - kafka1
+      - kafka2
+    networks:
+      - kafka-network
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka1:29092,PLAINTEXT://kafka2:29092
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC_REPLICATION_FACTOR: 2
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+
+  create-topic:
+    image: confluentinc/cp-kafka:7.0.1
+    networks:
+      - kafka-network
+    depends_on:
+      - kafka1
+      - kafka2
+    entrypoint: ["/bin/sh", "/create-topic.sh"]
+    volumes:
+      - ./create-topic.sh:/create-topic.sh:ro
+    environment:
+      BOOTSTRAP_SERVER: kafka1:29092
+      TOPIC: my-topic
+      PARTITIONS: "3"
+      REPLICATION_FACTOR: "2"
+    restart: "no"
+
+  producer:
+    <<: *app
+    command:
+      - -bootstrap
+      - kafka1:29092
+      - -schema-registry
+      - http://schema-registry:8081
+      - -topic
+      - my-topic
+      - -producer
+      - -delay
+      - "1"
+      - -partition
+      - "0"
+      - -max-messages
+      - "0"
+
+  consumer:
+    <<: *app
+    command:
+      - -bootstrap
+      - kafka1:29092
+      - -schema-registry
+      - http://schema-registry:8081
+      - -topic
+      - my-topic
+      - -consumer
+      - -group
+      - my-group
+
+  batch-consumer-by-settings:
+    <<: *app
+    command:
+      - -bootstrap
+      - kafka1:29092
+      - -schema-registry
+      - http://schema-registry:8081
+      - -topic
+      - my-topic
+      - -batch-by-settings
+      - -batch-settings-group
+      - batch-by-settings
+
+  batch-consumer-by-manual-commit:
+    <<: *app
+    command:
+      - -bootstrap
+      - kafka1:29092
+      - -schema-registry
+      - http://schema-registry:8081
+      - -topic
+      - my-topic
+      - -batch-by-manual-commit
+      - -batch-manual-group
+      - batch-by-manual-commit
+      - -batch-size
+      - "10"
+
+networks:
+  kafka-network:
