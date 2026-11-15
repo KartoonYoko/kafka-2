@@ -7,8 +7,8 @@
 *.test
 *.out
 
-# Локальная сборка (go build -o app ./cmd)
-app
+# Локальная сборка в корне репозитория (go build -o app ./cmd)
+/app
 
 # Зависимости и локальный Go workspace
 vendor/
