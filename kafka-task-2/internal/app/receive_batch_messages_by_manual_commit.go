@@ -32,29 +32,29 @@ func (r *ReceiveBatchMessagesByManualCommit) Execute(ctx context.Context) error 
 			return nil
 		}
 
-		if _, err := r.receiver.Receive(ctx); err != nil {
+		msg, err := r.receiver.Receive(ctx)
+		if err != nil {
 			if stopped(ctx) {
 				return nil
 			}
 			return err
 		}
 
+		log.Printf("получено сообщение: uuid %s, date %s, value %s",
+			msg.GetKey(),
+			msg.GetCreatedAt().AsTime().UTC().Format(time.RFC3339),
+			msg.GetValue(),
+		)
+
 		counter++
 
 		if counter%r.batchSize == 0 {
-			msg, err := r.receiver.Receive(ctx)
-			if err != nil {
+			if err := r.receiver.Commit(ctx); err != nil {
 				if stopped(ctx) {
 					return nil
 				}
 				return err
 			}
-
-			log.Printf("получено сообщение: uuid %s, date %s, value %s",
-				msg.GetKey(),
-				msg.GetCreatedAt().AsTime().UTC().Format(time.RFC3339),
-				msg.GetValue(),
-			)
 		}
 	}
 }
