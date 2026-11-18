@@ -73,7 +73,7 @@ func (c *Consumer) Receive(ctx context.Context) (*pb.Message, error) {
 		case *confluent.Message:
 			msg := &pb.Message{}
 			if err := c.deserializer.DeserializeInto(*e.TopicPartition.Topic, e.Value, msg); err != nil {
-				return nil, err
+				return nil, NewDeserializationError(err)
 			}
 
 			log.Printf("сообщение получено: топик=%s партиция=%d офсет=%v",

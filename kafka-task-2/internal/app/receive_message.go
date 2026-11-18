@@ -2,9 +2,11 @@ package app
 
 import (
 	"context"
+	"errors"
 	"log"
 	"time"
 
+	"kafka-task-2/internal/kafka"
 	pb "kafka-task-2/internal/proto"
 )
 
@@ -30,6 +32,11 @@ func (r *ReceiveMessage) Execute(ctx context.Context) error {
 
 		msg, err := r.receiver.Receive(ctx)
 		if err != nil {
+			var deserializationErr *kafka.DeserializationError
+			if errors.As(err, &deserializationErr) {
+				log.Printf("не удалось десериализовать сообщение: %v", deserializationErr)
+				continue
+			}
 			if stopped(ctx) {
 				return nil
 			}
