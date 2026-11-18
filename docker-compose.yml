@@ -1,16 +1,3 @@
-x-app: &app
-  build:
-    context: ./kafka-task-2
-    dockerfile: build/Dockerfile
-  networks:
-    - kafka-network
-  restart: on-failure
-  depends_on:
-    create-topic:
-      condition: service_completed_successfully
-    schema-registry:
-      condition: service_started
-
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:7.0.1
@@ -102,8 +89,20 @@ services:
       REPLICATION_FACTOR: "2"
     restart: "no"
 
-  producer:
-    <<: *app
+  app:
+    build:
+      context: ./kafka-task-2
+      dockerfile: build/Dockerfile
+    networks:
+      - kafka-network
+    restart: on-failure
+    depends_on:
+      create-topic:
+        condition: service_completed_successfully
+      schema-registry:
+        condition: service_started
+    deploy:
+      replicas: 2
     command:
       - -bootstrap
       - kafka1:29092
@@ -118,42 +117,12 @@ services:
       - "0"
       - -max-messages
       - "0"
-
-  consumer:
-    <<: *app
-    command:
-      - -bootstrap
-      - kafka1:29092
-      - -schema-registry
-      - http://schema-registry:8081
-      - -topic
-      - my-topic
       - -consumer
       - -group
       - my-group
-
-  batch-consumer-by-settings:
-    <<: *app
-    command:
-      - -bootstrap
-      - kafka1:29092
-      - -schema-registry
-      - http://schema-registry:8081
-      - -topic
-      - my-topic
       - -batch-by-settings
       - -batch-settings-group
       - batch-by-settings
-
-  batch-consumer-by-manual-commit:
-    <<: *app
-    command:
-      - -bootstrap
-      - kafka1:29092
-      - -schema-registry
-      - http://schema-registry:8081
-      - -topic
-      - my-topic
       - -batch-by-manual-commit
       - -batch-manual-group
       - batch-by-manual-commit
