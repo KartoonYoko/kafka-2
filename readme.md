@@ -13,7 +13,7 @@ docker compose exec kafka1 kafka-topics --create --topic my-topic --partitions 3
 docker compose exec kafka1 kafka-topics --describe --topic my-topic --bootstrap-server kafka1:29092
 ```
 
-После данного скрипта стартует [сервис app](./docker-compose.yml#L92-L130) в двух экземплярах. В каждом экземпляре одновременно работают:
+После данного скрипта стартует [сервис app](./docker-compose.yml#L112-L150) в двух экземплярах. В каждом экземпляре одновременно работают:
 - продюсер
 - консьюмер
 - пакетный консьюмер, который опирается на настройки "fetch.min.bytes", "fetch.wait.max.ms", чтобы получать ~10 сообщений за раз
