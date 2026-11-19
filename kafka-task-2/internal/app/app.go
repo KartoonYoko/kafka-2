@@ -41,7 +41,7 @@ func Run() {
 	}
 
 	if conf.Producer.Enabled {
-		producer, err = kafka.NewProducer(conf.SchemaRegistryServer, conf.KafkaBootstrapServer, conf.TopicName, conf.Producer.Partition)
+		producer, err = kafka.NewProducer(conf.SchemaRegistryServer, conf.KafkaBootstrapServer, conf.TopicName)
 		if err != nil {
 			log.Fatalf("ошибка продюсера: %s", err)
 		}

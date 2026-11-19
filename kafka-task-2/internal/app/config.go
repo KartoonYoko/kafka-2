@@ -30,8 +30,6 @@ type ProducerConfig struct {
 	Enabled bool `json:"enabled"`
 	// Delay — пауза в секундах между отправками, чтобы поток сообщений было видно в логах и Kafka UI.
 	Delay int `json:"delay"`
-	// Partition — партиция, в которую пишутся все сообщения, без распределения по ключу.
-	Partition int `json:"partition"`
 	// MaxMessages — сколько сообщений отправить и остановиться. 0 означает слать без ограничения, пока процесс не остановят.
 	MaxMessages int `json:"max_messages"`
 }
@@ -77,7 +75,6 @@ func (c *Config) load() error {
 	topic := flag.String("topic", "", "Имя топика Kafka")
 	delay := flag.Int("delay", 0, "Задержка в секундах перед следующим сообщением")
 	maxMessages := flag.Int("max-messages", 0, "Максимальное число сообщений для отправки; 0 — без ограничения")
-	partition := flag.Int("partition", 0, "Партиция, в которую отправляются сообщения")
 	groupID := flag.String("group", "", "Идентификатор группы потребителей Kafka")
 	producerEnabled := flag.Bool("producer", false, "Включить producer")
 	consumerEnabled := flag.Bool("consumer", false, "Включить consumer")
@@ -110,8 +107,6 @@ func (c *Config) load() error {
 			c.Producer.Delay = *delay
 		case "max-messages":
 			c.Producer.MaxMessages = *maxMessages
-		case "partition":
-			c.Producer.Partition = *partition
 		case "group":
 			c.Consumer.GroupID = *groupID
 		case "producer":

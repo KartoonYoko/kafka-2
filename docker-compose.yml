@@ -133,8 +133,6 @@ services:
       - -producer
       - -delay
       - "1"
-      - -partition
-      - "0"
       - -max-messages
       - "0"
       - -consumer

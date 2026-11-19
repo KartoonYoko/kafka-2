@@ -17,10 +17,9 @@ type Producer struct {
 	producer   *confluent.Producer
 	serializer *protobuf.Serializer
 	topic      string
-	partition  int32
 }
 
-func NewProducer(schemaRegistryURL, bootstrapServers, topic string, partition int) (*Producer, error) {
+func NewProducer(schemaRegistryURL, bootstrapServers, topic string) (*Producer, error) {
 	srClient, err := schemaregistry.NewClient(schemaregistry.NewConfig(schemaRegistryURL))
 	if err != nil {
 		return nil, fmt.Errorf("ошибка при создании клиента Schema Registry: %w", err)
@@ -30,6 +29,7 @@ func NewProducer(schemaRegistryURL, bootstrapServers, topic string, partition in
 		"bootstrap.servers": bootstrapServers,
 		"acks":              "all",
 		"retries":           3,
+		"partitioner":       "random",
 	})
 	if err != nil {
 		return nil, err
@@ -45,7 +45,6 @@ func NewProducer(schemaRegistryURL, bootstrapServers, topic string, partition in
 		producer:   producer,
 		serializer: serializer,
 		topic:      topic,
-		partition:  int32(partition),
 	}, nil
 }
 
@@ -64,7 +63,7 @@ func (c *Producer) Send(msg *pb.Message) error {
 	kafkaMsg := &confluent.Message{
 		TopicPartition: confluent.TopicPartition{
 			Topic:     &topic,
-			Partition: c.partition,
+			Partition: confluent.PartitionAny,
 		},
 		Key:   []byte(msg.GetKey()),
 		Value: payload,
