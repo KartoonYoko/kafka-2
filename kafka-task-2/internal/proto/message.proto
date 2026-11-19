@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+option go_package = "kafka-task-2/internal/proto;pb";
+
+import "google/protobuf/timestamp.proto";
+
+message Message {
+  string key = 1;
+  google.protobuf.Timestamp created_at = 2;
+  string value = 3;
+}

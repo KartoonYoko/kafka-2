@@ -1,0 +1,24 @@
+{
+  "schema_registry": "http://localhost:8081",
+  "bootstrap": "localhost:9092",
+  "topic": "my-topic",
+  "producer": {
+    "enabled": false,
+    "delay": 1,
+    "partition": 0,
+    "max_messages": 0
+  },
+  "consumer": {
+    "enabled": false,
+    "group": "my-group"
+  },
+  "batch_consumer_by_settings": {
+    "enabled": false,
+    "group": "batch-by-settings"
+  },
+  "batch_consumer_by_manual_commit": {
+    "enabled": false,
+    "group": "batch-by-manual-commit",
+    "batch_size": 10
+  }
+}
