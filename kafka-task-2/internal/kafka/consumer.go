@@ -13,7 +13,7 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/v2/schemaregistry/serde/protobuf"
 )
 
-// Косьюмер, который автоматически сохраняет смещение и имеет найстройки по умолчанию
+// Косьюмер, который сохраняет смещение после каждого обработанного сообщения.
 type Consumer struct {
 	consumer     *confluent.Consumer
 	deserializer *protobuf.Deserializer
@@ -26,9 +26,10 @@ func NewConsumer(schemaRegistryURL, bootstrapServers, topic, groupID string) (*C
 	}
 
 	consumer, err := confluent.NewConsumer(&confluent.ConfigMap{
-		"bootstrap.servers": bootstrapServers,
-		"group.id":          groupID,
-		"auto.offset.reset": "latest",
+		"bootstrap.servers":  bootstrapServers,
+		"group.id":           groupID,
+		"auto.offset.reset":  "latest",
+		"enable.auto.commit": false,
 	})
 	if err != nil {
 		return nil, err
@@ -65,7 +66,6 @@ func (c *Consumer) Receive(ctx context.Context) (*pb.Message, error) {
 
 		ev := c.consumer.Poll(1000)
 		if ev == nil {
-			log.Println("получено пустое событие от poll")
 			continue
 		}
 
@@ -87,4 +87,21 @@ func (c *Consumer) Receive(ctx context.Context) (*pb.Message, error) {
 			log.Printf("ошибка консьюмера: %v", e)
 		}
 	}
+}
+
+func (c *Consumer) Commit(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	partitions, err := c.consumer.Commit()
+	if err != nil {
+		if kafkaErr, ok := err.(confluent.Error); ok && kafkaErr.Code() == confluent.ErrNoOffset {
+			return nil
+		}
+		return fmt.Errorf("ошибка коммита смещения: %w", err)
+	}
+
+	log.Printf("смещение сохранено: %v", partitions)
+	return nil
 }

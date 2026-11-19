@@ -14,13 +14,19 @@ type Receiver interface {
 	Receive(ctx context.Context) (*pb.Message, error)
 }
 
-type ReceiveMessage struct {
-	receiver Receiver
+type Committer interface {
+	Commit(ctx context.Context) error
 }
 
-func NewReceiveMessage(receiver Receiver) *ReceiveMessage {
+type ReceiveMessage struct {
+	receiver  Receiver
+	committer Committer
+}
+
+func NewReceiveMessage(receiver Receiver, committer Committer) *ReceiveMessage {
 	return &ReceiveMessage{
-		receiver: receiver,
+		receiver:  receiver,
+		committer: committer,
 	}
 }
 
@@ -49,5 +55,14 @@ func (r *ReceiveMessage) Execute(ctx context.Context) error {
 			msg.GetValue(),
 		)
 
+		if r.committer == nil {
+			continue
+		}
+		if err := r.committer.Commit(ctx); err != nil {
+			if stopped(ctx) {
+				return nil
+			}
+			return err
+		}
 	}
 }

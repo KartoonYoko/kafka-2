@@ -86,7 +86,7 @@ func Run() {
 		}()
 	}
 	if consumer != nil {
-		receiveMessage := NewReceiveMessage(consumer)
+		receiveMessage := NewReceiveMessage(consumer, consumer)
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -97,7 +97,7 @@ func Run() {
 		}()
 	}
 	if batchBySettings != nil {
-		receiveMessage := NewReceiveMessage(batchBySettings)
+		receiveMessage := NewReceiveMessage(batchBySettings, nil)
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

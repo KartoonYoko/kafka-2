@@ -67,7 +67,6 @@ func (c *BatchConsumerByManualCommit) Receive(ctx context.Context) (*pb.Message,
 
 		ev := c.consumer.Poll(1000)
 		if ev == nil {
-			log.Println("получено пустое событие от poll")
 			continue
 		}
 
